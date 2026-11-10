@@ -1,0 +1,37 @@
+{
+  "name": "rkmg",
+  "version": "1.0.0",
+  "description": "RedLine Knowledge & Model Gateway (RKMG)",
+  "type": "module",
+  "main": "dist/gateway/index.js",
+  "scripts": {
+    "dev": "tsx watch src/gateway/index.ts",
+    "build": "tsc && node -e \"const fs=require('node:fs'); fs.mkdirSync('dist/inference', {recursive:true}); fs.copyFileSync('src/inference/grammar.gbnf', 'dist/inference/grammar.gbnf')\"",
+    "start": "node dist/gateway/index.js",
+    "test": "tsx --test tests/**/*.test.ts",
+    "benchmark": "tsx scripts/benchmark.ts"
+  },
+  "keywords": [
+    "redline",
+    "gateway",
+    "llm",
+    "rag",
+    "llama.cpp"
+  ],
+  "author": "Dheeraj Kumar B K",
+  "license": "ISC",
+  "dependencies": {
+    "chokidar": "^4.0.3",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

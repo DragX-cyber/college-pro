@@ -1,0 +1,62 @@
+# RedLine Knowledge & Model Gateway (RKMG) Configuration
+# Defines server port, embedding backend, and model tiers for routing.
+
+server:
+  host: "127.0.0.1"
+  port: 8000
+  log_level: "info"
+
+embedding:
+  endpoint: "http://127.0.0.1:8083"
+  model: "nomic-embed-text"
+  dimensions: 768
+  batch_size: 16
+  timeout_ms: 15000
+
+tiers:
+  fast:
+    name: "qwen3.5-9b"
+    endpoint: "http://127.0.0.1:8080"
+    description: "Fast light model for routine commands and checks"
+    max_tokens: 768
+    temperature: 0.2
+    cache_prompt: true
+    top_p: 0.9
+    repeat_penalty: 1.1
+    # Action types routed to this tier
+    actions:
+      - "shell"
+      - "run_check"
+      - "shell_batch"
+      - "get_knowledge"
+
+  strong:
+    name: "qwen3-30b-a3b"
+    endpoint: "http://127.0.0.1:8080"
+    description: "Stronger model for multi-step reasoning, strategy, and final synthesis"
+    max_tokens: 768
+    temperature: 0.2
+    cache_prompt: true
+    top_p: 0.9
+    repeat_penalty: 1.1
+    # Action types routed to this tier
+    actions:
+      - "get_tool_strategy"
+      - "flag_honeypot"
+      - "note_finding"
+      - "generate_payload"
+      - "final"
+
+routing:
+  default_tier: "fast"
+  planning_tier: "strong"
+  # Heuristic fallback keywords that trigger the strong tier when action is not explicitly known
+  planning_keywords:
+    - "strategy"
+    - "exploit"
+    - "plan"
+    - "summary"
+    - "analyze"
+    - "finding"
+    - "honeypot"
+

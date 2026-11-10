@@ -1,0 +1,31 @@
+# Copy to charter.yaml and configure your own authorized scope.
+engagement_id: null
+scope:
+  hosts:
+    - localhost
+  networks:
+    - 127.0.0.1/32
+    - ::1/128
+  hosts_map:
+    localhost:
+      - 127.0.0.1
+  base_urls: {}
+rules_of_engagement:
+  max_concurrent_actions: 1
+  rate_limit_per_minute: 30
+  destructive_actions: forbidden
+  exploit_demo: null
+  time_budget_minutes: 90
+exploitation:
+  ladder_enabled: true
+  max_rung: 3
+  replica_host: null
+  chain_budget:
+    max_depth: 5
+    max_minutes: 40
+    max_attempts_per_step: 2
+deception:
+  enabled: true
+  honeypot_threshold: 60
+autonomy:
+  mode: advisory

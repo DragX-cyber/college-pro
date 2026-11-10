@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RKMG Knowledge & Model Gateway — Test Console</title>
+  <style>
+    :root {
+      --bg: #0a0e14;
+      --panel: #111822;
+      --panel-border: #1f2c3f;
+      --text: #e2e8f0;
+      --text-muted: #8899a6;
+      --accent-green: #00ff9d;
+      --accent-cyan: #00e5ff;
+      --accent-orange: #ff9d00;
+      --accent-red: #ff3366;
+      --code-bg: #05080c;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--panel-border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .badge-rkmg {
+      background: rgba(0, 255, 157, 0.15);
+      color: var(--accent-green);
+      font-weight: 700;
+      font-size: 13px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 255, 157, 0.3);
+      letter-spacing: 1px;
+    }
+    h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .health-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #4a5568;
+    }
+    .status-dot.online { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+    .status-dot.offline { background: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: #0d131a;
+      border-bottom: 1px solid var(--panel-border);
+      padding: 0 24px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: #fff; }
+    .tab-btn.active {
+      color: var(--accent-cyan);
+      border-bottom-color: var(--accent-cyan);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      padding: 16px 24px;
+      gap: 16px;
+    }
+
+    /* Chat View */
+    .chat-view {
+      display: flex;
+      flex: 1;
+      gap: 16px;
+      height: 100%;
+    }
+    .chat-panel {
+      flex: 1.2;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .telemetry-panel {
+      flex: 0.8;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--panel-border);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .msg-user {
+      align-self: flex-end;
+      background: #1a2736;
+      border: 1px solid #2a3d54;
+      padding: 10px 14px;
+      border-radius: 8px 8px 0 8px;
+      max-width: 80%;
+      font-size: 14px;
+    }
+
+    .msg-assistant {
+      align-self: flex-start;
+      background: #0f1722;
+      border: 1px solid var(--panel-border);
+      padding: 12px 16px;
+      border-radius: 8px 8px 8px 0;
+      max-width: 90%;
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .thought-bubble {
+      color: var(--text-muted);
+      font-style: italic;
+      border-left: 2px solid var(--accent-cyan);
+      padding-left: 10px;
+      font-size: 13px;
+    }
+
+    .action-box {
+      background: var(--code-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: monospace;
+      font-size: 12px;
+      overflow-x: auto;
+    }
+    .action-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .badge-shell { background: rgba(0, 255, 157, 0.2); color: var(--accent-green); }
+    .badge-strategy { background: rgba(0, 229, 255, 0.2); color: var(--accent-cyan); }
+    .badge-knowledge { background: rgba(255, 157, 0, 0.2); color: var(--accent-orange); }
+    .badge-final { background: rgba(147, 51, 234, 0.2); color: #c084fc; }
+
+    /* Telemetry View */
+    .telemetry-content {
+      padding: 16px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .metric-card {
+      background: var(--code-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 10px;
+    }
+    .metric-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .metric-val {
+      font-size: 16px;
+      font-weight: 700;
+      margin-top: 4px;
+      color: #fff;
+    }
+    .val-cached { color: var(--accent-green); }
+    .val-cold { color: var(--accent-orange); }
+
+    .knowledge-block-box {
+      background: var(--code-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #cbd5e1;
+      white-space: pre-wrap;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    /* Prompt Form */
+    .chat-input-area {
+      padding: 12px 16px;
+      border-top: 1px solid var(--panel-border);
+      background: rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .presets-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .preset-chip {
+      background: #16202c;
+      border: 1px solid #233346;
+      color: #94a3b8;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .preset-chip:hover {
+      background: #1e2c3c;
+      color: #fff;
+      border-color: var(--accent-cyan);
+    }
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+    textarea {
+      flex: 1;
+      background: #0d131a;
+      border: 1px solid var(--panel-border);
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      resize: none;
+      height: 48px;
+      font-family: inherit;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent-cyan);
+    }
+    .btn {
+      background: var(--accent-cyan);
+      color: #000;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      padding: 0 18px;
+      cursor: pointer;
+      transition: filter 0.2s;
+    }
+    .btn:hover { filter: brightness(1.15); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Controls Row */
+    .controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .controls-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    input[type="checkbox"] { accent-color: var(--accent-cyan); }
+
+    /* Explorer View */
+    .explorer-view {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      gap: 16px;
+      height: 100%;
+    }
+    .search-bar {
+      display: flex;
+      gap: 10px;
+    }
+    .search-input {
+      flex: 1;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .search-results {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .result-card {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: #fff;
+    }
+    .card-score {
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--accent-green);
+      background: rgba(0, 255, 157, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .card-content {
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+    .card-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .tag {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    /* Autolearn Form */
+    .autolearn-view {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      gap: 16px;
+      height: 100%;
+      max-width: 800px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-label {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .form-control {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="badge-rkmg">RKMG</span>
+      <h1>RedLine Knowledge & Model Gateway — Testing Console</h1>
+    </div>
+    <div class="health-status">
+      <div id="statusDot" class="status-dot"></div>
+      <span id="statusText">Connecting to Gateway (:8000)...</span>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" onclick="switchTab('chat')">💬 Chat & Knowledge Injection</button>
+    <button class="tab-btn" onclick="switchTab('explorer')">🔍 Knowledge Base Explorer</button>
+    <button class="tab-btn" onclick="switchTab('autolearn')">⚡ Test Autolearn Pipeline</button>
+  </nav>
+
+  <main>
+    <!-- TAB 1: Chat & Knowledge Telemetry -->
+    <div id="tabChat" class="chat-view">
+      <div class="chat-panel">
+        <div class="panel-header">
+          <span>INTERACTION REPL (OpenAI-compatible /v1/chat/completions)</span>
+          <button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;" onclick="clearChat()">Clear Chat</button>
+        </div>
+        <div id="chatMessages" class="chat-messages">
+          <div class="msg-assistant">
+            <div class="thought-bubble">RKMG ready. Type a prompt or choose a preset below to see how knowledge is retrieved and injected once per session.</div>
+            <div>Authorized targets: <code>192.168.1.1</code>, <code>10.0.0.5</code>. Test commands, honeypot detection, or syntax.</div>
+          </div>
+        </div>
+
+        <div class="chat-input-area">
+          <div class="presets-row">
+            <span class="preset-chip" onclick="applyPreset('Perform an nmap version scan on 192.168.1.50 that appears down on ping.')">nmap -Pn ping drop</span>
+            <span class="preset-chip" onclick="applyPreset('Sweep all 65535 ports on 10.0.0.5 with masscan fast.')">masscan 65k timeout math</span>
+            <span class="preset-chip" onclick="applyPreset('Prepare a netcat reverse shell listener before firing the payload.')">revshell listener rule</span>
+            <span class="preset-chip" onclick="applyPreset('Run gentle sqlmap injection check against http://192.168.1.50/login.php')">sqlmap gentle risk</span>
+            <span class="preset-chip" onclick="applyPreset('Target opened all 65535 ports immediately with identical banners. Check honeypot.')">honeypot detection</span>
+          </div>
+
+          <div class="input-row">
+            <textarea id="promptInput" placeholder="Enter tactical red-team instruction..." onkeydown="handleKey(event)"></textarea>
+            <button id="sendBtn" class="btn" onclick="sendMessage()">Send</button>
+          </div>
+
+          <div class="controls-row">
+            <div class="controls-group">
+              <span>Session: <code id="sessionIdDisplay">session_test_01</code></span>
+              <button style="background:#16202c;border:1px solid #233346;color:#cbd5e1;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:11px;" onclick="newSession()">New Session</button>
+              <label class="toggle-label">
+                <input type="checkbox" id="checkpointToggle">
+                <span>Force Checkpoint (Refresh Knowledge)</span>
+              </label>
+            </div>
+            <div class="controls-group">
+              <label class="toggle-label" title="Test knowledge retrieval even if llama-server is not running">
+                <input type="checkbox" id="dryRunToggle">
+                <span>Dry-Run (Knowledge Preview Only)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Telemetry Sidecar -->
+      <div class="telemetry-panel">
+        <div class="panel-header">
+          <span>RKMG SESSION TELEMETRY & INJECTED KNOWLEDGE</span>
+          <span id="turnBadge" style="font-size:11px;color:var(--accent-cyan);">Turn: 1</span>
+        </div>
+        <div class="telemetry-content">
+          <div class="metric-grid">
+            <div class="metric-card">
+              <div class="metric-label">Prefix Stability</div>
+              <div id="prefixMetric" class="metric-val val-cold">Cold (Turn 1)</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Model Tier</div>
+              <div id="tierMetric" class="metric-val">fast</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Elapsed Time</div>
+              <div id="latencyMetric" class="metric-val">0 ms</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Checkpoint Ver.</div>
+              <div id="checkpointMetric" class="metric-val">v1</div>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;font-weight:600;">INJECTED KNOWLEDGE BLOCK (System Prompt Prefix):</div>
+            <div id="injectedKnowledgeDisplay" class="knowledge-block-box">No session knowledge captured yet. Send a prompt to trigger retrieval.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: Knowledge Explorer -->
+    <div id="tabExplorer" class="explorer-view">
+      <div class="search-bar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search the knowledge base (e.g. nmap, masscan, wsl, curl, reverse shell)..." oninput="debounceSearch()">
+        <button class="btn" onclick="executeSearch()">Search</button>
+      </div>
+      <div id="searchResults" class="search-results">
+        <div style="color:var(--text-muted);font-size:13px;padding:20px;text-align:center;">Type a search query above to inspect hybrid vector + keyword entries.</div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Autolearn Test -->
+    <div id="tabAutolearn" class="autolearn-view">
+      <div class="panel-header">
+        <span>SUBMIT MISTAKE ENTRY TO GATEWAY (Auto-syncs into Vector Index)</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tool Name</label>
+        <input type="text" id="autoTool" class="form-control" placeholder="e.g. rustscan, nmap, masscan" value="rustscan">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mistake Title</label>
+        <input type="text" id="autoTitle" class="form-control" placeholder="e.g. rustscan socket exhaustion on large ranges" value="rustscan socket limits">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Guidance / Caveat Content</label>
+        <textarea id="autoContent" class="form-control" style="height:100px;" placeholder="Describe what went wrong and how the agent should correct it...">Always pass --ulimit 5000 when scanning more than 1000 ports to prevent silent drop of connection packets on Windows/WSL.</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags (comma-separated)</label>
+        <input type="text" id="autoTags" class="form-control" placeholder="rustscan, sockets, limits" value="rustscan, sockets, ulimit">
+      </div>
+      <div>
+        <button class="btn" style="padding:10px 24px;" onclick="submitAutolearn()">Ingest Failure Rule</button>
+      </div>
+      <div id="autolearnResult" style="display:none;background:var(--code-bg);border:1px solid var(--panel-border);padding:14px;border-radius:6px;font-size:13px;"></div>
+    </div>
+  </main>
+
+  <script>
+    const GATEWAY_URL = window.location.origin.includes('http') && !window.location.origin.includes('file')
+      ? window.location.origin
+      : 'http://127.0.0.1:8000';
+
+    let currentSessionId = 'session_' + Math.random().toString(36).substring(2, 9);
+    let messagesHistory = [];
+    let searchTimeout = null;
+
+    document.getElementById('sessionIdDisplay').innerText = currentSessionId;
+
+    // Probe Health
+    async function checkHealth() {
+      try {
+        const res = await fetch(`${GATEWAY_URL}/health`, { signal: AbortSignal.timeout(3000) });
+        if (res.ok) {
+          const json = await res.json();
+          document.getElementById('statusDot').className = 'status-dot online';
+          document.getElementById('statusText').innerText = `Gateway Online (${json.indexedKnowledgeCount} rules indexed)`;
+        } else {
+          throw new Error('HTTP ' + res.status);
+        }
+      } catch (e) {
+        document.getElementById('statusDot').className = 'status-dot offline';
+        document.getElementById('statusText').innerText = 'Gateway Offline (Start with npm run dev on :8000)';
+      }
+    }
+    checkHealth();
+    setInterval(checkHealth, 5000);
+
+    // Tab Switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tabChat').style.display = 'none';
+      document.getElementById('tabExplorer').style.display = 'none';
+      document.getElementById('tabAutolearn').style.display = 'none';
+
+      if (tabId === 'chat') {
+        document.getElementById('tabChat').style.display = 'flex';
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+      } else if (tabId === 'explorer') {
+        document.getElementById('tabExplorer').style.display = 'flex';
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        if (document.getElementById('searchResults').children.length <= 1) {
+          executeSearch('nmap');
+        }
+      } else if (tabId === 'autolearn') {
+        document.getElementById('tabAutolearn').style.display = 'flex';
+        document.querySelectorAll('.tab-btn')[2].classList.add('active');
+      }
+    }
+
+    function newSession() {
+      currentSessionId = 'session_' + Math.random().toString(36).substring(2, 9);
+      document.getElementById('sessionIdDisplay').innerText = currentSessionId;
+      messagesHistory = [];
+      document.getElementById('turnBadge').innerText = 'Turn: 1';
+      document.getElementById('prefixMetric').className = 'metric-val val-cold';
+      document.getElementById('prefixMetric').innerText = 'Cold (Turn 1)';
+      document.getElementById('injectedKnowledgeDisplay').innerText = 'New session started. Next prompt will trigger cold retrieval.';
+      appendSystemNotice(`Started new session: ${currentSessionId}`);
+    }
+
+    function clearChat() {
+      document.getElementById('chatMessages').innerHTML = '';
+      messagesHistory = [];
+    }
+
+    function applyPreset(text) {
+      document.getElementById('promptInput').value = text;
+      document.getElementById('promptInput').focus();
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    function appendSystemNotice(text) {
+      const container = document.getElementById('chatMessages');
+      const div = document.createElement('div');
+      div.style.cssText = 'text-align:center;font-size:12px;color:var(--text-muted);font-style:italic;';
+      div.innerText = '— ' + text + ' —';
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('promptInput');
+      const prompt = input.value.trim();
+      if (!prompt) return;
+
+      const btn = document.getElementById('sendBtn');
+      btn.disabled = true;
+      input.value = '';
+
+      // Append user bubble
+      const chatContainer = document.getElementById('chatMessages');
+      const userDiv = document.createElement('div');
+      userDiv.className = 'msg-user';
+      userDiv.innerText = prompt;
+      chatContainer.appendChild(userDiv);
+
+      const isCheckpoint = document.getElementById('checkpointToggle').checked;
+      const isDryRun = document.getElementById('dryRunToggle').checked;
+
+      // Uncheck checkpoint after firing
+      if (isCheckpoint) document.getElementById('checkpointToggle').checked = false;
+
+      messagesHistory.push({ role: 'user', content: prompt });
+
+      const startTime = performance.now();
+
+      try {
+        const headers = {
+          'Content-Type': 'application/json',
+          'X-RedLine-Session': currentSessionId
+        };
+        if (isCheckpoint) headers['X-RedLine-Checkpoint'] = 'true';
+        if (isDryRun) headers['X-RKMG-Dry-Run'] = 'true';
+
+        const res = await fetch(`${GATEWAY_URL}/v1/chat/completions`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model: 'redline-gateway',
+            messages: [
+              {
+                role: 'system',
+                content: `You are REDLINE red team assistant.\n## ACTIVE ENGAGEMENT: ${currentSessionId}\ntarget: 192.168.1.1\n\n## YOUR TOOLS\n- shell\n- run_check\n- get_tool_strategy\n- get_knowledge\n- final`
+              },
+              ...messagesHistory
+            ],
+            max_tokens: 400,
+            temperature: 0.2,
+            dryRun: isDryRun
+          })
+        });
+
+        const elapsed = (performance.now() - startTime).toFixed(1);
+        document.getElementById('latencyMetric').innerText = `${elapsed} ms`;
+
+        // Telemetry header extraction
+        const tier = res.headers.get('X-RKMG-Tier') || 'fast';
+        const turn = res.headers.get('X-RKMG-Turn') || '1';
+        const isCached = res.headers.get('X-RKMG-Cached') === 'true';
+        const cpVersion = res.headers.get('X-RKMG-Checkpoint-Version') || '1';
+        const b64Knowledge = res.headers.get('X-RKMG-Injected-Knowledge');
+
+        document.getElementById('tierMetric').innerText = tier.toUpperCase();
+        document.getElementById('turnBadge').innerText = `Turn: ${turn}`;
+        document.getElementById('checkpointMetric').innerText = `v${cpVersion}`;
+
+        if (isCached) {
+          document.getElementById('prefixMetric').className = 'metric-val val-cached';
+          document.getElementById('prefixMetric').innerText = '100% Cached (O(1))';
+        } else {
+          document.getElementById('prefixMetric').className = 'metric-val val-cold';
+          document.getElementById('prefixMetric').innerText = 'Cold Injected';
+        }
+
+        if (b64Knowledge) {
+          try {
+            const rawKnowledge = decodeURIComponent(escape(atob(b64Knowledge)));
+            document.getElementById('injectedKnowledgeDisplay').innerText = rawKnowledge || '(Empty knowledge block)';
+          } catch(e) {}
+        }
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData?.error?.message || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        const content = data?.choices?.[0]?.message?.content || '';
+        messagesHistory.push({ role: 'assistant', content });
+
+        // If response included dry-run injectedKnowledge in body
+        if (data?.injectedKnowledge) {
+          document.getElementById('injectedKnowledgeDisplay').innerText = data.injectedKnowledge;
+        }
+
+        // Format assistant display
+        renderAssistantResponse(content);
+
+      } catch (err) {
+        const errDiv = document.createElement('div');
+        errDiv.className = 'msg-assistant';
+        errDiv.innerHTML = `<span style="color:var(--accent-red);font-weight:600;">⚠️ Request Notice:</span> <span>${err.message}</span>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Tip: Check the Telemetry panel on the right — RKMG retrieved the relevant knowledge rules even if local llama-server is currently paused! You can also check "Dry-Run" to test knowledge without requiring GPU inference.</div>`;
+        chatContainer.appendChild(errDiv);
+      } finally {
+        btn.disabled = false;
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    }
+
+    function renderAssistantResponse(rawContent) {
+      const container = document.getElementById('chatMessages');
+      const div = document.createElement('div');
+      div.className = 'msg-assistant';
+
+      try {
+        const parsed = JSON.parse(rawContent);
+        let actionBadge = '';
+        const tool = parsed?.action?.tool || 'unknown';
+        if (tool === 'shell' || tool === 'shell_batch') actionBadge = `<span class="action-badge badge-shell">${tool}</span>`;
+        else if (tool === 'get_tool_strategy') actionBadge = `<span class="action-badge badge-strategy">${tool}</span>`;
+        else if (tool === 'get_knowledge') actionBadge = `<span class="action-badge badge-knowledge">${tool}</span>`;
+        else if (tool === 'final') actionBadge = `<span class="action-badge badge-final">${tool}</span>`;
+        else actionBadge = `<span class="action-badge badge-shell">${tool}</span>`;
+
+        div.innerHTML = `
+          ${parsed.thought ? `<div class="thought-bubble">"${parsed.thought}"</div>` : ''}
+          <div class="action-box">
+            ${actionBadge}
+            <pre style="margin-top:6px;color:#a5b4fc;">${JSON.stringify(parsed.action, null, 2)}</pre>
+          </div>
+        `;
+      } catch (e) {
+        div.innerHTML = `<pre style="white-space:pre-wrap;font-family:monospace;font-size:12px;">${rawContent}</pre>`;
+      }
+
+      container.appendChild(div);
+    }
+
+    // Knowledge Explorer Search
+    function debounceSearch() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        const q = document.getElementById('searchInput').value.trim();
+        if (q) executeSearch(q);
+      }, 250);
+    }
+
+    async function executeSearch(queryOverride) {
+      const q = queryOverride || document.getElementById('searchInput').value.trim();
+      if (!q) return;
+
+      const container = document.getElementById('searchResults');
+      container.innerHTML = '<div style="color:var(--text-muted);padding:10px;">Searching vector & keyword index...</div>';
+
+      try {
+        const res = await fetch(`${GATEWAY_URL}/v1/knowledge/search?q=${encodeURIComponent(q)}&limit=10`);
+        if (!res.ok) throw new Error('Search failed: ' + res.status);
+        const data = await res.json();
+
+        if (!data.hits || data.hits.length === 0) {
+          container.innerHTML = `<div style="color:var(--text-muted);padding:20px;text-align:center;">No matching knowledge entries found for "${q}".</div>`;
+          return;
+        }
+
+        container.innerHTML = '';
+        for (const hit of data.hits) {
+          const card = document.createElement('div');
+          card.className = 'result-card';
+          card.innerHTML = `
+            <div class="card-head">
+              <span class="card-title">${hit.title}</span>
+              <span class="card-score">Score: ${hit.score.toFixed(1)} (${hit.matchType})</span>
+            </div>
+            <div class="card-content">${hit.content}</div>
+            <div class="card-tags">
+              <span class="tag" style="color:var(--accent-cyan);">source: ${hit.source}</span>
+              <span class="tag" style="color:var(--accent-orange);">kind: ${hit.kind}</span>
+              ${hit.tool ? `<span class="tag" style="color:var(--accent-green);">tool: ${hit.tool}</span>` : ''}
+              ${(hit.tags || []).map(t => `<span class="tag">#${t}</span>`).join('')}
+            </div>
+          `;
+          container.appendChild(card);
+        }
+      } catch (err) {
+        container.innerHTML = `<div style="color:var(--accent-red);padding:10px;">Search Error: ${err.message}</div>`;
+      }
+    }
+
+    // Autolearn Submission
+    async function submitAutolearn() {
+      const tool = document.getElementById('autoTool').value.trim();
+      const title = document.getElementById('autoTitle').value.trim();
+      const content = document.getElementById('autoContent').value.trim();
+      const tags = document.getElementById('autoTags').value.split(',').map(s => s.trim()).filter(Boolean);
+
+      const resBox = document.getElementById('autolearnResult');
+      resBox.style.display = 'block';
+      resBox.innerHTML = '<span style="color:var(--text-muted);">Submitting failure rule to /v1/knowledge/autolearn...</span>';
+
+      try {
+        const res = await fetch(`${GATEWAY_URL}/v1/knowledge/autolearn`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tool, title, content, tags, kind: 'mistake' })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed');
+
+        resBox.innerHTML = `
+          <div style="color:var(--accent-green);font-weight:600;">✓ Ingestion Succeeded!</div>
+          <div style="margin-top:6px;color:#cbd5e1;">Created file: <code>knowledge/autolearn/${data.file}</code></div>
+          <div style="color:var(--text-muted);font-size:12px;margin-top:4px;">The RKMG file watcher instantly indexed this rule into SQLite. Switch to the <b>Knowledge Base Explorer</b> tab to search for "${title}".</div>
+        `;
+      } catch (e) {
+        resBox.innerHTML = `<span style="color:var(--accent-red);">Error: ${e.message}</span>`;
+      }
+    }
+  </script>
+</body>
+</html>

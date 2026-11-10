@@ -1,0 +1,41 @@
+# RedLine Action Protocol GBNF Grammar
+# Enforces: {"thought": "<reasoning>", "action": {"tool": "<tool_name>", ...fields}}
+
+root ::= "{" ws "\"thought\"" ws ":" ws string ws "," ws "\"action\"" ws ":" ws action ws "}"
+
+action ::= shell-action
+         | shell-batch-action
+         | run-check-action
+         | tool-strategy-action
+         | knowledge-action
+         | payload-action
+         | honeypot-action
+         | finding-action
+         | final-action
+
+shell-action ::= "{" ws "\"tool\"" ws ":" ws "\"shell\"" ws "," ws "\"command\"" ws ":" ws string ws "," ws "\"reason\"" ws ":" ws string (ws "," ws "\"timeoutMs\"" ws ":" ws number)? ws "}"
+
+shell-batch-action ::= "{" ws "\"tool\"" ws ":" ws "\"shell_batch\"" ws "," ws "\"commands\"" ws ":" ws string-array ws "," ws "\"reason\"" ws ":" ws string (ws "," ws "\"timeoutMs\"" ws ":" ws number)? ws "}"
+
+run-check-action ::= "{" ws "\"tool\"" ws ":" ws "\"run_check\"" ws "," ws "\"check\"" ws ":" ws check-type ws "," ws "\"target\"" ws ":" ws string ws "}"
+check-type ::= "\"ping\"" | "\"nslookup\"" | "\"whatweb\"" | "\"curl\""
+
+tool-strategy-action ::= "{" ws "\"tool\"" ws ":" ws "\"get_tool_strategy\"" ws "," ws "\"task\"" ws ":" ws string (ws "," ws "\"priority\"" ws ":" ws priority-type)? ws "}"
+priority-type ::= "\"speed\"" | "\"coverage\"" | "\"stealth\"" | "\"reliability\"" | "\"balanced\""
+
+knowledge-action ::= "{" ws "\"tool\"" ws ":" ws "\"get_knowledge\"" ws "," ws "\"query\"" ws ":" ws string (ws "," ws "\"tool\"" ws ":" ws string)? ws "}"
+
+payload-action ::= "{" ws "\"tool\"" ws ":" ws "\"generate_payload\"" ws "," ws "\"kind\"" ws ":" ws string ws "," ws "\"lhost\"" ws ":" ws string (ws "," ws "\"lport\"" ws ":" ws number)? ws "}"
+
+honeypot-action ::= "{" ws "\"tool\"" ws ":" ws "\"flag_honeypot\"" ws "," ws "\"target\"" ws ":" ws string ws "," ws "\"score\"" ws ":" ws number ws "," ws "\"signals\"" ws ":" ws string-array ws "," ws "\"strategy\"" ws ":" ws string ws "}"
+
+finding-action ::= "{" ws "\"tool\"" ws ":" ws "\"note_finding\"" ws "," ws "\"kind\"" ws ":" ws string ws "," ws "\"title\"" ws ":" ws string ws "," ws "\"detail\"" ws ":" ws string ws "," ws "\"severity\"" ws ":" ws severity-type ws "}"
+severity-type ::= "\"info\"" | "\"low\"" | "\"medium\"" | "\"high\"" | "\"critical\""
+
+final-action ::= "{" ws "\"tool\"" ws ":" ws "\"final\"" ws "," ws "\"text\"" ws ":" ws string ws "}"
+
+string-array ::= "[" ws (string (ws "," ws string)*)? ws "]"
+string ::= "\"" ([^"\\] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))* "\""
+number ::= [0-9]+ ("." [0-9]+)?
+ws ::= [ \t\n\r]*
+

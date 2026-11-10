@@ -1,0 +1,16 @@
+{
+  "name": "redline-gateway-workspace",
+  "version": "1.0.0",
+  "description": "RedLine Workspace with RKMG Standalone Gateway",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix rkmg run dev",
+    "build": "npm --prefix rkmg run build",
+    "start": "npm --prefix rkmg start",
+    "test": "npm --prefix rkmg test",
+    "benchmark": "npm --prefix rkmg run benchmark",
+    "redline": "cmd /c start-redline.bat",
+    "redline:cli": "bun --cwd redline-backup-20261026-0543-prevector cli/index.ts"
+  }
+}
+

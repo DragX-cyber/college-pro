@@ -1,0 +1,66 @@
+# Dependencies and package-manager caches
+node_modules/
+.npm/
+.pnpm-store/
+.pnp.*
+
+# Build output and test reports
+dist/
+build/
+.next/
+out/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Local environment and credentials (commit templates only)
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Runtime databases, logs, and scratch files
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.log
+*.log.*
+*.pid
+*.pid.lock
+.redline/
+/rkmg/data/
+/rkmg/knowledge/autolearn/
+
+# Operator authorization is local; share only the example
+/redline-backup-20261026-0543-prevector/lab/charter.yaml
+
+# Model weights and local backups
+*.gguf
+*.ggml
+*.safetensors
+*.onnx
+/redline-backup-*.zip
+
+# Editor, assistant, deployment, and OS state
+.idea/
+.vscode/
+.claude/
+.codex/
+.zcode/
+.z-ai-config
+.vercel/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# Keep package-lock.json and bun.lock: fresh installs need them.

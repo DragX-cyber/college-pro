@@ -1,0 +1,457 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-mono-stack);
+  --font-mono: var(--font-mono-stack);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REDLINE — dual theme
+   LIGHT (default tokens): light operations-deck, neon colors remapped to
+     saturated signal-ink variants so text NEVER merges with the background.
+   html.dark: the original near-black cyberpunk console with full neon glow.
+   Toggle via the Sun/Moon button (src/components/cyber/theme-toggle.tsx).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --radius: 0.25rem;
+
+  --font-mono-stack: "JetBrains Mono", "Cascadia Code", "Fira Code", ui-monospace,
+    SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* ── light operations-deck ── */
+  --background: #eef2f7;
+  --foreground: #16202e;
+  --card: #ffffff;
+  --card-foreground: #16202e;
+  --popover: #ffffff;
+  --popover-foreground: #16202e;
+  --primary: #006e8f;
+  --primary-foreground: #ffffff;
+  --secondary: #e3eaf2;
+  --secondary-foreground: #1c2b3a;
+  --muted: #e6ecf3;
+  --muted-foreground: #516b83;
+  --accent: #f7f3c2;
+  --accent-foreground: #37360a;
+  --destructive: #d21f3c;
+  --border: rgba(15, 35, 60, 0.16);
+  --input: rgba(15, 35, 60, 0.26);
+  --ring: #006e8f;
+  --chart-1: #007e9e;
+  --chart-2: #c51753;
+  --chart-3: #8a8200;
+  --chart-4: #098a58;
+  --chart-5: #9a5b00;
+  --sidebar: #f3f7fb;
+  --sidebar-foreground: #16202e;
+  --sidebar-primary: #006e8f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e3eaf2;
+  --sidebar-accent-foreground: #1c2b3a;
+  --sidebar-border: rgba(15, 35, 60, 0.14);
+  --sidebar-ring: #006e8f;
+
+  /* neon signal colors — remapped for contrast on light backgrounds */
+  --neon-cyan: #007e9e;
+  --neon-magenta: #c51753;
+  --neon-acid: #757400;
+  --neon-green: #067a4e;
+  --neon-red: #c81e42;
+  --neon-amber: #94550a;
+
+  /* theme-flippable atmosphere */
+  --grid-line: rgba(15, 35, 60, 0.06);
+  --scroll-thumb: rgba(15, 35, 60, 0.24);
+  --glow-cyan: rgba(0, 110, 143, 0.2);
+  --sel-bg: rgba(0, 110, 143, 0.16);
+  --body-glow-a: rgba(0, 126, 158, 0.05);
+  --body-glow-b: rgba(197, 23, 83, 0.04);
+}
+
+/* ── dark cyberpunk console (original palette) ── */
+html.dark {
+  --background: #05070d;
+  --foreground: #d3e4f2;
+  --card: #0a101c;
+  --card-foreground: #d3e4f2;
+  --popover: #0b1322;
+  --popover-foreground: #d3e4f2;
+  --primary: #00e5ff;
+  --primary-foreground: #02161c;
+  --secondary: #101a2b;
+  --secondary-foreground: #bfe9ff;
+  --muted: #0c1524;
+  --muted-foreground: #5f7d99;
+  --accent: #f9f002;
+  --accent-foreground: #191600;
+  --destructive: #ff2a55;
+  --border: rgba(0, 229, 255, 0.14);
+  --input: rgba(0, 229, 255, 0.2);
+  --ring: #00e5ff;
+  --chart-1: #00e5ff;
+  --chart-2: #ff2a6d;
+  --chart-3: #f9f002;
+  --chart-4: #0aff9d;
+  --chart-5: #ffb400;
+  --sidebar: #070b13;
+  --sidebar-foreground: #d3e4f2;
+  --sidebar-primary: #00e5ff;
+  --sidebar-primary-foreground: #02161c;
+  --sidebar-accent: #101a2b;
+  --sidebar-accent-foreground: #bfe9ff;
+  --sidebar-border: rgba(0, 229, 255, 0.12);
+  --sidebar-ring: #00e5ff;
+
+  --neon-cyan: #00e5ff;
+  --neon-magenta: #ff2a6d;
+  --neon-acid: #f9f002;
+  --neon-green: #0aff9d;
+  --neon-red: #ff2a55;
+  --neon-amber: #ffb400;
+
+  --grid-line: rgba(0, 229, 255, 0.045);
+  --scroll-thumb: rgba(0, 229, 255, 0.28);
+  --glow-cyan: rgba(0, 229, 255, 0.35);
+  --sel-bg: rgba(0, 229, 255, 0.28);
+  --body-glow-a: rgba(0, 229, 255, 0.07);
+  --body-glow-b: rgba(255, 42, 109, 0.06);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-mono-stack);
+    font-size: 13px;
+    letter-spacing: 0.01em;
+    background-image:
+      radial-gradient(1100px 500px at 12% -8%, var(--body-glow-a), transparent 60%),
+      radial-gradient(900px 480px at 95% 108%, var(--body-glow-b), transparent 60%);
+    background-attachment: fixed;
+  }
+  ::selection {
+    background: var(--sel-bg);
+  }
+}
+
+/* ── grid + scanline atmosphere ─────────────────────────────────────────── */
+
+.cyber-grid::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 20%, black 30%, transparent 100%);
+}
+
+.cyber-scanlines::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.16) 0px,
+    rgba(0, 0, 0, 0.16) 1px,
+    transparent 2px,
+    transparent 4px
+  );
+  opacity: 0.4;
+}
+
+/* ── HUD panels with corner brackets ────────────────────────────────────── */
+
+.cyber-panel {
+  position: relative;
+  background: linear-gradient(160deg, rgba(10, 16, 28, 0.92), rgba(7, 11, 19, 0.92));
+  border: 1px solid var(--border);
+  backdrop-filter: blur(6px);
+}
+.cyber-panel::before,
+.cyber-panel::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
+.cyber-panel::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid var(--neon-cyan);
+  border-left: 1px solid var(--neon-cyan);
+}
+.cyber-panel::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1px solid var(--neon-cyan);
+  border-right: 1px solid var(--neon-cyan);
+}
+.cyber-panel-accent::before {
+  border-color: var(--neon-magenta);
+}
+.cyber-panel-accent::after {
+  border-color: var(--neon-magenta);
+}
+.cyber-panel-danger::before {
+  border-color: var(--neon-red);
+}
+.cyber-panel-danger::after {
+  border-color: var(--neon-red);
+}
+
+/* Radix portal dialogs (alert-dialog / dialog) carry the cyber-panel skin, but
+   .cyber-panel's `position: relative` (unlayered CSS) beats Tailwind's layered
+   `.fixed` utility — the dialog would drop into page flow under the app shell
+   and render half off-screen. Re-assert fixed positioning for dialog contents. */
+.cyber-panel[data-slot="alert-dialog-content"],
+.cyber-panel[data-slot="dialog-content"] {
+  position: fixed;
+}
+
+/* ── glitch wordmark ─────────────────────────────────────────────────────── */
+
+.glitch {
+  position: relative;
+  display: inline-block;
+}
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  clip-path: inset(50% 0 50% 0);
+  opacity: 0;
+}
+.glitch::before {
+  color: var(--neon-magenta);
+  animation: glitch-a 3.4s infinite steps(1);
+}
+.glitch::after {
+  color: var(--neon-cyan);
+  animation: glitch-b 2.9s infinite steps(1);
+}
+@keyframes glitch-a {
+  0%, 86%, 100% { opacity: 0; transform: none; clip-path: inset(50% 0 50% 0); }
+  88% { opacity: 0.85; transform: translate(-2px, 1px); clip-path: inset(12% 0 58% 0); }
+  92% { opacity: 0.85; transform: translate(2px, -1px); clip-path: inset(62% 0 8% 0); }
+  96% { opacity: 0; }
+}
+@keyframes glitch-b {
+  0%, 88%, 100% { opacity: 0; transform: none; clip-path: inset(50% 0 50% 0); }
+  90% { opacity: 0.8; transform: translate(2px, -1px); clip-path: inset(40% 0 30% 0); }
+  94% { opacity: 0.8; transform: translate(-2px, 1px); clip-path: inset(4% 0 76% 0); }
+  98% { opacity: 0; }
+}
+
+/* ── neon text + pulsing dots ────────────────────────────────────────────── */
+
+.neon-cyan { color: var(--neon-cyan); text-shadow: 0 0 10px rgba(0, 229, 255, 0.45); }
+.neon-magenta { color: var(--neon-magenta); text-shadow: 0 0 10px rgba(255, 42, 109, 0.45); }
+.neon-acid { color: var(--neon-acid); text-shadow: 0 0 10px rgba(249, 240, 2, 0.35); }
+.neon-green { color: var(--neon-green); text-shadow: 0 0 10px rgba(10, 255, 157, 0.4); }
+.neon-red { color: var(--neon-red); text-shadow: 0 0 10px rgba(255, 42, 85, 0.45); }
+.neon-amber { color: var(--neon-amber); text-shadow: 0 0 10px rgba(255, 180, 0, 0.4); }
+
+.pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+/* ── animated scan bar (headers) ─────────────────────────────────────────── */
+
+.scan-bar {
+  position: relative;
+  overflow: hidden;
+}
+.scan-bar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 34%;
+  background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.12), transparent);
+  animation: scan 4.5s linear infinite;
+}
+@keyframes scan {
+  0% { left: -40%; }
+  100% { left: 110%; }
+}
+
+/* ── flicker-in entrance ─────────────────────────────────────────────────── */
+
+.flicker-in {
+  animation: flicker-in 0.5s ease-out both;
+}
+@keyframes flicker-in {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  15% { opacity: 0.2; }
+  20% { opacity: 1; }
+  30% { opacity: 0.55; }
+  40%, 100% { opacity: 1; }
+}
+
+.rise-in {
+  animation: rise-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── typing caret ────────────────────────────────────────────────────────── */
+
+.type-caret::after {
+  content: "▌";
+  color: var(--neon-cyan);
+  animation: caret 1s steps(1) infinite;
+}
+@keyframes caret {
+  50% { opacity: 0; }
+}
+
+/* ── terminal stream look ────────────────────────────────────────────────── */
+
+.term-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+.term-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.term-scroll::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 0;
+}
+.term-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* ── unrestricted banner marquee ─────────────────────────────────────────── */
+
+.danger-banner {
+  background: linear-gradient(90deg, rgba(255, 42, 85, 0.16), rgba(255, 42, 85, 0.32), rgba(255, 42, 85, 0.16));
+  border-top: 1px solid rgba(255, 42, 85, 0.5);
+  border-bottom: 1px solid rgba(255, 42, 85, 0.5);
+  animation: danger-glow 2.2s ease-in-out infinite;
+}
+@keyframes danger-glow {
+  0%, 100% { box-shadow: inset 0 0 22px rgba(255, 42, 85, 0.12); }
+  50% { box-shadow: inset 0 0 34px rgba(255, 42, 85, 0.26); }
+}
+
+/* ── neon outline buttons ────────────────────────────────────────────────── */
+
+.btn-neon {
+  transition: box-shadow 0.18s ease, background-color 0.18s ease, color 0.18s ease, transform 0.12s ease;
+}
+.btn-neon:hover {
+  box-shadow: 0 0 18px var(--glow-cyan), inset 0 0 10px color-mix(in srgb, var(--glow-cyan) 40%, transparent);
+}
+.btn-neon:active {
+  transform: translateY(1px);
+}
+
+/* ── mode badge pulse for UNRESTRICTED ───────────────────────────────────── */
+
+.badge-danger-pulse {
+  animation: badge-pulse 1.4s ease-in-out infinite;
+}
+@keyframes badge-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(255, 42, 85, 0.55); }
+  50% { box-shadow: 0 0 20px rgba(255, 42, 85, 0.95); }
+}
+
+/* ── light-mode explicit overrides ─────────────────────────────────────── */
+
+/* The themed haze draws itself from tokens; explicit fixes are only for
+   things Tailwind can't re-derive: hardcoded black panels and the neon
+   text-shadow values written with dark-palette rgba. Everything lives at
+   `html:not(.dark)` so unlayered rules outrank layered utilities. */
+
+html:not(.dark) .cyber-panel {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.94), rgba(244, 248, 252, 0.96));
+}
+html:not(.dark) .cyber-scanlines::after {
+  opacity: 0.1;
+}
+
+/* black utility panels (terminal rows, output pre-formats, inputs) →
+   translucent ink so light text colors never sit inside a dark box */
+html:not(.dark) .bg-black\/20 { background-color: rgba(13, 21, 36, 0.04); }
+html:not(.dark) .bg-black\/25 { background-color: rgba(13, 21, 36, 0.045); }
+html:not(.dark) .bg-black\/30 { background-color: rgba(13, 21, 36, 0.05); }
+html:not(.dark) .bg-black\/40 { background-color: rgba(13, 21, 36, 0.055); }
+html:not(.dark) .bg-black\/45 { background-color: rgba(13, 21, 36, 0.06); }
+/* deeper blacks are ALSO modal overlays — only retint the terminal ones */
+html:not(.dark) .bg-black\/50.term-scroll { background-color: rgba(13, 21, 36, 0.065); }
+html:not(.dark) .bg-black\/60.term-scroll { background-color: rgba(13, 21, 36, 0.075); }
+
+/* neon glow: dark-palette shadows smear like graphite on paper → softer halo */
+html:not(.dark) .neon-cyan { text-shadow: 0 0 6px rgba(0, 126, 158, 0.2); }
+html:not(.dark) .neon-magenta { text-shadow: 0 0 6px rgba(197, 23, 83, 0.16); }
+html:not(.dark) .neon-acid { text-shadow: 0 0 6px rgba(117, 116, 0, 0.14); }
+html:not(.dark) .neon-green { text-shadow: 0 0 6px rgba(6, 122, 78, 0.16); }
+html:not(.dark) .neon-red { text-shadow: 0 0 6px rgba(200, 30, 66, 0.18); }
+html:not(.dark) .neon-amber { text-shadow: 0 0 6px rgba(148, 85, 10, 0.18); }
+
+@media (prefers-reduced-motion: reduce) {
+  .glitch::before, .glitch::after, .scan-bar::after, .pulse-dot,
+  .danger-banner, .badge-danger-pulse, .flicker-in, .rise-in, .type-caret::after {
+    animation: none !important;
+  }
+}

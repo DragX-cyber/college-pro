@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Operator settings (mode, provider config, budgets, kill switch) ───
+model Setting {
+  key   String @id
+  value String
+}
+
+// ─── Audit trail: every gate verdict, every command, every refusal ───
+model AuditEvent {
+  id      Int      @id @default(autoincrement())
+  ts      DateTime @default(now())
+  kind    String // scope_refused | off_target_refused | free_command_refused | command_blocked | command_executed | command_approved | command_denied | kill_switch | rate_limited | loop_blocked | mode_changed | unrestricted_enabled | unrestricted_disabled | tool_registered | tool_removed | honeypot_flagged | engagement_started | engagement_completed | approval_timeout | engagement_gate | charter_changed | settings_changed | provider_error
+  mode    String
+  actor   String // operator | agent | system
+  verdict String? // allowed | refused | blocked | info
+  detail  String // JSON payload
+}
+
+// ─── Chat sessions (Console + CLI share the core) ───
+model ChatSession {
+  id        String        @id @default(cuid())
+  title     String        @default("session")
+  mode      String        @default("free")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  ChatMessage[]
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String // user | assistant | system
+  content   String
+  meta      String? // JSON: { actions: [...], findings, refusals }
+  ts        DateTime @default(now())
+}
+
+// ─── Approval cards (FREE TERMINAL: non-read-only commands wait here) ───
+model ApprovalRequest {
+  id        String    @id @default(cuid())
+  sessionId String?
+  engagementId String?
+  tool      String
+  command   String
+  reason    String
+  mode      String
+  status    String    @default("pending") // pending | approved | denied | expired
+  createdAt DateTime  @default(now())
+  decidedAt DateTime?
+  decidedBy String?
+}
+
+// ─── Engagements: the operator-gated red team process ───
+model Engagement {
+  id         Int              @id @default(autoincrement())
+  eid        String           @unique
+  target     String
+  objective  String
+  profile    String           @default("balanced") // stealth | balanced | fast
+  domains    String           @default("[]") // JSON array of domains
+  status     String           @default("planned") // planned | running | paused | done | aborted
+  phase      String           @default("recon")
+  plan       String           @default("{}") // JSON plan
+  runner     String           @default("heuristic") // heuristic | agent
+  modeAtStart String          @default("free")
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  tasks      EngagementTask[]
+  findings   Finding[]
+}
+
+model EngagementTask {
+  id            Int         @id @default(autoincrement())
+  engagementId  Int
+  engagement    Engagement  @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  title         String
+  phase         String
+  domain        String
+  parallelGroup Int         @default(0)
+  toolHint      String?
+  strategy      String? // JSON selector output
+  status        String      @default("pending") // pending | running | done | failed | refused | tool_unavailable | skipped
+  output        String?
+  summary       String?
+  footprint     Int?
+  startedAt     DateTime?
+  finishedAt    DateTime?
+}
+
+model Finding {
+  id            Int         @id @default(autoincrement())
+  engagementId  Int?
+  engagement    Engagement? @relation(fields: [engagementId], references: [id], onDelete: SetNull)
+  sessionId     String?
+  kind          String // open_port | service | tech | vuln | cred | exposure | info | honeypot
+  title         String
+  detail        String
+  severity      String   @default("info") // info | low | medium | high | critical
+  honeypotScore Int?
+  evidence      String?
+  ts            DateTime @default(now())
+}
+
+// ─── Marketplace: installed tool manifests (registry source of truth) ───
+model InstalledTool {
+  id          String   @id // tool id from catalog
+  version     String?
+  enabled     Boolean  @default(true)
+  manifest    String // JSON ToolManifest
+  installedAt DateTime @default(now())
+}
+
+// ─── Every executed tool call: capture + audit (step 5 of the wrapper) ───
+model ToolRun {
+  id         Int      @id @default(autoincrement())
+  tool       String
+  args       String
+  target     String?
+  mode       String
+  verdict    String // executed | refused | blocked | denied | expired
+  exitCode   Int?
+  durationMs Int?
+  outputHead String? // first ~4000 chars
+  sessionId  String?
+  ts         DateTime @default(now())
+}
+
+// ─── Knowledge RAG: curated + auto-learned expertise injected into the agent ───
+model KnowledgeEntry {
+  id        Int      @id @default(autoincrement())
+  kind      String // tool_usage | command_syntax | mistake | planning
+  tool      String? // binary the entry is about (nmap, curl, ...) — null = general
+  title     String
+  content   String
+  tags      String   @default("[]") // JSON string array
+  source    String   @default("operator") // operator | seed | autolearn | docs | import
+  sig       String?  // autolearn dedup signature (tool + error head)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  embedding KnowledgeEmbedding?
+
+  @@index([tool])
+  @@index([kind])
+}
+
+// 1:1 with KnowledgeEntry — semantic vector for hybrid search (JSON float
+// array; brute-force cosine in memory is microseconds at KB scale)
+model KnowledgeEmbedding {
+  entryId Int      @id
+  entry   KnowledgeEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  vector  String // JSON float array
+  model   String // embedding model identifier (e.g. nomic-embed-text-v1.5)
+  dims    Int
+  ts      DateTime @updatedAt
+}
