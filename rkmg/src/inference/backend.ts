@@ -21,6 +21,21 @@ export interface BackendTierConfig {
   top_p?: number;
   repeat_penalty?: number;
   actions?: string[];
+  /** Literal bearer token for a remote tier (prefer api_key_env to keep secrets
+   *  out of the committed config). */
+  api_key?: string;
+  /** Name of the env var holding the bearer token for a remote tier, e.g.
+   *  "DEEPSEEK_API_KEY". Resolved at call time; wins over api_key when both set. */
+  api_key_env?: string;
+  /** How hard to constrain this tier's output (P0.2 — reasoning freedom):
+   *   'schema' — strict llama-server grammar, byte-exact action validity (local only)
+   *   'json'   — JSON-object mode only: valid JSON, but the model structures its
+   *              own reasoning in `thought` instead of fighting a 9-branch grammar
+   *   'off'    — no constraint: max reasoning freedom; relies on RedLine's tolerant
+   *              parser + repair. Use if the model is still too rote on 'json'.
+   *  Default: 'json' for a remote/keyed tier (schema is llama-server-only), else
+   *  'schema'. A reasoning/decision tier benefits from 'json'. */
+  structured_output?: 'schema' | 'json' | 'off';
 }
 
 export interface CompletionOptions {
@@ -75,6 +90,43 @@ export class InferenceBackend {
     return this.config;
   }
 
+  /** Resolve this tier's bearer token (env var wins over literal). '' when none. */
+  private resolveApiKey(): string {
+    const fromEnv = this.config.api_key_env ? process.env[this.config.api_key_env] : undefined;
+    return (fromEnv || this.config.api_key || '').trim();
+  }
+
+  /** True when this tier expects an API key (remote provider) but none is
+   *  resolvable — so a request routed here would fail auth. The router uses this
+   *  to transparently fall back to a local tier, keeping the gateway runnable
+   *  out of the box when the operator hasn't configured a remote key yet. */
+  public needsKeyButMissing(): boolean {
+    return Boolean(this.config.api_key_env) && !this.resolveApiKey();
+  }
+
+  /** Request headers — adds Authorization only for a remote (keyed) tier. */
+  private buildHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const key = this.resolveApiKey();
+    if (key) headers['Authorization'] = `Bearer ${key}`;
+    return headers;
+  }
+
+  /** Structured-output constraint (P0.2). Returns undefined for 'off' (no
+   *  constraint — maximum reasoning freedom). A local llama-server accepts a
+   *  JSON *schema* (compiled to a GBNF grammar) for byte-exact action validity;
+   *  a remote OpenAI-compatible API (keyed tier) rejects that non-standard
+   *  field, so it can only use plain JSON mode. The default frees a remote tier
+   *  to 'json' and keeps a local tier on 'schema' unless the config overrides. */
+  private responseFormat(): Record<string, any> | undefined {
+    const remote = Boolean(this.resolveApiKey());
+    const mode = this.config.structured_output ?? (remote ? 'json' : 'schema');
+    if (mode === 'off') return undefined;
+    // 'schema' is llama-server-only; a remote tier is forced down to 'json'.
+    if (mode === 'json' || remote) return { type: 'json_object' };
+    return { type: 'json_object', schema: REDLINE_ACTION_JSON_SCHEMA };
+  }
+
   /**
    * Check if this backend server is responsive.
    */
@@ -107,7 +159,7 @@ export class InferenceBackend {
     const bodyPayload: Record<string, any> = {
       model: this.config.name,
       messages,
-      temperature: temperature ?? this.config.temperature ?? 0.2,
+      temperature: this.config.temperature ?? temperature ?? 0.2, // tier config wins (gateway owns model params)
       max_tokens: maxTokens ?? this.config.max_tokens ?? 1024,
       stream: false,
       // Prompt cache preservation invariant: ensure prefix match KV-cache is reused
@@ -117,11 +169,10 @@ export class InferenceBackend {
     };
 
     if (grammarConstraint) {
-      // Structured output constraint via schema (llama-server translates to grammar internally)
-      bodyPayload.response_format = {
-        type: 'json_object',
-        schema: REDLINE_ACTION_JSON_SCHEMA
-      };
+      // Structured output constraint — schema (local llama-server → GBNF),
+      // plain JSON mode, or none ('off'). See responseFormat().
+      const rf = this.responseFormat();
+      if (rf) bodyPayload.response_format = rf;
     }
 
     const controller = new AbortController();
@@ -130,7 +181,7 @@ export class InferenceBackend {
     try {
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.buildHeaders(),
         body: JSON.stringify(bodyPayload),
         signal: controller.signal
       });
@@ -188,7 +239,7 @@ export class InferenceBackend {
     const bodyPayload: Record<string, any> = {
       model: this.config.name,
       messages,
-      temperature: temperature ?? this.config.temperature ?? 0.2,
+      temperature: this.config.temperature ?? temperature ?? 0.2, // tier config wins (gateway owns model params)
       max_tokens: maxTokens ?? this.config.max_tokens ?? 1024,
       stream: true,
       cache_prompt: this.config.cache_prompt ?? true,
@@ -197,15 +248,13 @@ export class InferenceBackend {
     };
 
     if (grammarConstraint) {
-      bodyPayload.response_format = {
-        type: 'json_object',
-        schema: REDLINE_ACTION_JSON_SCHEMA
-      };
+      const rf = this.responseFormat();
+      if (rf) bodyPayload.response_format = rf;
     }
 
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.buildHeaders(),
       body: JSON.stringify(bodyPayload)
     });
 

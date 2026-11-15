@@ -327,6 +327,10 @@ export async function runTurn(input: TurnInput): Promise<void> {
     )
     const result = await chatComplete(messages, {
       sessionId: input.sessionId,
+      // Every step of the ReAct loop is a reasoning/decision step (the model
+      // chooses the next action), so it belongs on the strong tier. The RKMG
+      // gateway honors this header; non-gateway providers ignore it. (P0.1)
+      tier: 'strong',
       onChunk: (chunk) => {
         if (isStopRequested(input.sessionId)) return
         parser.feed(chunk)

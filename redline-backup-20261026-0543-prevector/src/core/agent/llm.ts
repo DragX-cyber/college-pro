@@ -69,7 +69,8 @@ async function openAICompatible(
   messages: ChatMessage[],
   extra: Record<string, unknown> = {},
   onChunk?: (chunk: string) => void,
-  sessionId?: string
+  sessionId?: string,
+  extraHeaders: Record<string, string> = {}
 ): Promise<string> {
   const isStreaming = Boolean(onChunk)
   const res = await fetchWithTimeout(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
@@ -77,6 +78,7 @@ async function openAICompatible(
     headers: {
       'Content-Type': 'application/json',
       ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+      ...extraHeaders,
     },
     body: JSON.stringify({
       model,
@@ -245,6 +247,10 @@ export async function chatComplete(
     baseUrl?: string
     apiKey?: string
     onChunk?: (chunk: string) => void
+    /** Routing hint for the RKMG gateway (P0.1). 'strong' = the thinking brain
+     *  (action choice, planning, synthesis); 'fast' = mechanical execution.
+     *  Sent as the X-RedLine-Tier header; ignored by non-RKMG providers. */
+    tier?: 'fast' | 'strong'
   } = {}
 ): Promise<LLMResult> {
   const settings = await getSettings()
@@ -253,6 +259,9 @@ export async function chatComplete(
   const baseUrl = opts.baseUrl || settings.baseUrl
   const apiKey = opts.apiKey || settings.apiKey
   const onChunk = opts.onChunk
+  // Deterministic tier routing for the gateway. Harmless for providers that
+  // ignore unknown request headers (OpenAI, Ollama, LM Studio, …).
+  const routeHeaders: Record<string, string> = opts.tier ? { 'X-RedLine-Tier': opts.tier } : {}
 
   try {
     let content: string
@@ -261,19 +270,19 @@ export async function chatComplete(
         content = await zaiChat(messages)
         break
       case 'ollama':
-        content = await openAICompatible(baseUrl || 'http://localhost:11434/v1', model || 'llama3.1', undefined, messages, {}, onChunk, opts.sessionId)
+        content = await openAICompatible(baseUrl || 'http://localhost:11434/v1', model || 'llama3.1', undefined, messages, {}, onChunk, opts.sessionId, routeHeaders)
         break
       case 'lmstudio':
-        content = await openAICompatible(baseUrl || 'http://localhost:1234/v1', model || 'local-model', undefined, messages, {}, onChunk, opts.sessionId)
+        content = await openAICompatible(baseUrl || 'http://localhost:1234/v1', model || 'local-model', undefined, messages, {}, onChunk, opts.sessionId, routeHeaders)
         break
       case 'llamacpp':
-        content = await openAICompatible(baseUrl || 'http://localhost:8080/v1', model || 'local-model', undefined, messages, { cache_prompt: true, top_p: 0.9, repeat_penalty: 1.1 }, onChunk, opts.sessionId)
+        content = await openAICompatible(baseUrl || 'http://localhost:8080/v1', model || 'local-model', undefined, messages, { cache_prompt: true, top_p: 0.9, repeat_penalty: 1.1 }, onChunk, opts.sessionId, routeHeaders)
         break
       case 'openai-compat':
-        content = await openAICompatible(baseUrl || 'http://localhost:8000/v1', model || 'local-model', apiKey || undefined, messages, {}, onChunk, opts.sessionId)
+        content = await openAICompatible(baseUrl || 'http://localhost:8000/v1', model || 'local-model', apiKey || undefined, messages, {}, onChunk, opts.sessionId, routeHeaders)
         break
       case 'openai':
-        content = await openAICompatible('https://api.openai.com/v1', model || 'gpt-4o-mini', apiKey || undefined, messages, {}, onChunk, opts.sessionId)
+        content = await openAICompatible('https://api.openai.com/v1', model || 'gpt-4o-mini', apiKey || undefined, messages, {}, onChunk, opts.sessionId, routeHeaders)
         break
       case 'anthropic':
         content = await anthropicChat('https://api.anthropic.com', model || 'claude-sonnet-4-20250514', apiKey || '', messages)
@@ -282,7 +291,7 @@ export async function chatComplete(
         content = await puterChat(apiKey || '', model || 'claude-sonnet-5-5', messages)
         break
       case 'orca':
-        content = await openAICompatible(baseUrl || 'https://api.orcarouter.ai/v1', model || 'z-ai/glm-5.3-flash-free', apiKey || undefined, messages, {}, onChunk, opts.sessionId)
+        content = await openAICompatible(baseUrl || 'https://api.orcarouter.ai/v1', model || 'z-ai/glm-5.3-flash-free', apiKey || undefined, messages, {}, onChunk, opts.sessionId, routeHeaders)
         break
       default:
         throw new Error(`unknown provider: ${provider}`)

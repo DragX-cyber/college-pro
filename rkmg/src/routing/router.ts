@@ -89,6 +89,35 @@ export interface RouteInspection {
 }
 
 /**
+ * Resolve the backend that should actually serve `tierName`. If that tier is a
+ * remote provider whose API key is not configured, transparently fall back to a
+ * usable local tier (prefer "fast") so the gateway stays runnable out of the box
+ * — the logical tier choice is preserved for headers/telemetry; only the backend
+ * that executes is swapped. Returns a note describing any fallback.
+ */
+function resolveUsableBackend(tierName: string): { backend: InferenceBackend; note: string } {
+  const primary = getBackendForTier(tierName);
+  if (!primary.needsKeyButMissing()) return { backend: primary, note: '' };
+
+  const config = getConfig();
+  const candidates = ['fast', config.routing.default_tier, ...Object.keys(config.tiers)];
+  const seen = new Set<string>();
+  for (const t of candidates) {
+    if (!t || t === tierName || seen.has(t)) continue;
+    seen.add(t);
+    const b = backendsMap.get(t);
+    if (b && !b.needsKeyButMissing()) {
+      return {
+        backend: b,
+        note: ` (tier "${tierName}" expects ${primary.getConfig().api_key_env} which is unset — falling back to local tier "${t}")`
+      };
+    }
+  }
+  // Nothing better available — let the request proceed and fail loudly.
+  return { backend: primary, note: '' };
+}
+
+/**
  * Inspects incoming request headers, messages, and prompt stage to route to the appropriate model tier.
  */
 export function routeRequest(
@@ -99,26 +128,25 @@ export function routeRequest(
   const defaultTier = config.routing.default_tier || 'fast';
   const planningTier = config.routing.planning_tier || 'strong';
 
+  // Preserves the logical tier choice while swapping in a usable backend when a
+  // remote tier's key is missing (see resolveUsableBackend).
+  const finalize = (tier: string, reason: string): RouteInspection => {
+    const { backend, note } = resolveUsableBackend(tier);
+    return { selectedTier: tier, reason: reason + note, backend };
+  };
+
   // 1. Explicit header overrides
   const headerAction = (headers['x-redline-action'] as string)?.toLowerCase()?.trim();
   const headerTier = (headers['x-redline-tier'] as string)?.toLowerCase()?.trim();
 
   if (headerTier && config.tiers[headerTier]) {
-    return {
-      selectedTier: headerTier,
-      reason: `Explicit X-RedLine-Tier header: ${headerTier}`,
-      backend: getBackendForTier(headerTier)
-    };
+    return finalize(headerTier, `Explicit X-RedLine-Tier header: ${headerTier}`);
   }
 
   if (headerAction) {
     for (const [tierName, tierConf] of Object.entries(config.tiers)) {
       if (tierConf.actions?.includes(headerAction)) {
-        return {
-          selectedTier: tierName,
-          reason: `Action header "${headerAction}" matched tier ${tierName}`,
-          backend: getBackendForTier(tierName)
-        };
+        return finalize(tierName, `Action header "${headerAction}" matched tier ${tierName}`);
       }
     }
   }
@@ -145,11 +173,7 @@ export function routeRequest(
       for (const action of tierConf.actions) {
         // If last assistant called get_tool_strategy or final, or user prompted for it
         if (lastAssistantMsg.includes(`"tool":"${action}"`) || lastAssistantMsg.includes(`"tool": "${action}"`)) {
-          return {
-            selectedTier: tierName,
-            reason: `Recent action "${action}" matched tier ${tierName}`,
-            backend: getBackendForTier(tierName)
-          };
+          return finalize(tierName, `Recent action "${action}" matched tier ${tierName}`);
         }
       }
     }
@@ -159,18 +183,10 @@ export function routeRequest(
   const lowerUser = lastUserMsg.toLowerCase();
   const matchedKeyword = planningKeywords.find((kw) => lowerUser.includes(kw));
   if (matchedKeyword && config.tiers[planningTier]) {
-    return {
-      selectedTier: planningTier,
-      reason: `Planning keyword "${matchedKeyword}" matched in prompt`,
-      backend: getBackendForTier(planningTier)
-    };
+    return finalize(planningTier, `Planning keyword "${matchedKeyword}" matched in prompt`);
   }
 
-  // Default to fast tier for routine commands
-  return {
-    selectedTier: defaultTier,
-    reason: `Default routine tier: ${defaultTier}`,
-    backend: getBackendForTier(defaultTier)
-  };
+  // Default routine tier
+  return finalize(defaultTier, `Default routine tier: ${defaultTier}`);
 }
 
