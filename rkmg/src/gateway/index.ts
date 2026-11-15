@@ -1,41 +1,13 @@
 import http from 'node:http';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig } from '../routing/router.js';
 import { syncAllKnowledge, startKnowledgeWatcher } from '../knowledge/watcher.js';
 import { createGatewayApp } from './server.js';
+import { loadDotEnv } from './env.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-/**
- * Minimal, dependency-free .env loader. Reads rkmg/.env (KEY=VALUE per line,
- * `#` comments, optional quotes) into process.env WITHOUT overwriting a var
- * already set in the real environment. Used to supply remote-tier API keys
- * (e.g. DEEPSEEK_API_KEY) so secrets stay out of the committed config.
- */
-function loadDotEnv() {
-  const envPath = path.resolve(__dirname, '../../.env');
-  if (!fs.existsSync(envPath)) return;
-  try {
-    for (const raw of fs.readFileSync(envPath, 'utf-8').split(/\r?\n/)) {
-      const line = raw.trim();
-      if (!line || line.startsWith('#')) continue;
-      const eq = line.indexOf('=');
-      if (eq === -1) continue;
-      const key = line.slice(0, eq).trim();
-      let val = line.slice(eq + 1).trim();
-      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-        val = val.slice(1, -1);
-      }
-      if (key && process.env[key] === undefined) process.env[key] = val;
-    }
-    console.log('[RKMG Init] Loaded .env');
-  } catch (e: any) {
-    console.warn(`[RKMG Init] Could not read .env: ${String(e?.message || e)}`);
-  }
-}
 
 /** Warn loudly if a tier points at a remote API but its key env var is unset —
  *  the strong tier would otherwise fail auth on the first request. */
@@ -56,7 +28,9 @@ async function main() {
   console.log('   RedLine Knowledge & Model Gateway (RKMG)');
   console.log('====================================================');
 
-  loadDotEnv();
+  if (loadDotEnv(path.resolve(__dirname, '../../.env'))) {
+    console.log('[RKMG Init] Loaded .env');
+  }
 
   const configPath = path.resolve(__dirname, '../../config/models.yaml');
   const config = loadConfig(configPath);

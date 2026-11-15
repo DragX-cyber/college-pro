@@ -94,7 +94,7 @@ multi-step reasoning. Model choice for the *decision* step matters.
      uses standard JSON mode instead of the llama-server schema for remote tiers); RedLine
      now sends `X-RedLine-Tier: strong` on every ReAct reasoning turn
      (`llm.ts` + `orchestrator.ts`) so the gateway routes deterministically instead of
-     guessing from history. RKMG typecheck + 5/5 tests green.
+     guessing from history. RKMG typecheck clean + 23/23 tests green (incl. backend auth/structured-output/temperature, routing fallback, and .env parser edge cases).
    - ⚠️ **Caveat for the current setup:** you run only **one local model (qwen3.5-9b)**, so
      routing to the "strong" tier lands on the same 9B — this is now correct *plumbing*, but
      it does not itself make the agent smarter until `strong` points at a genuinely stronger
@@ -124,7 +124,7 @@ multi-step reasoning. Model choice for the *decision* step matters.
      available if a model is still too rote (RedLine's tolerant parser handles shape).
    - Per-tier temperature is now authoritative in the gateway (strong = 0.3 for planning,
      fast = 0.2 for command emission); updated the RKMG `thought` schema description.
-   - RKMG typecheck + 5/5 tests green.
+   - RKMG typecheck clean + 23/23 tests green (incl. backend auth/structured-output/temperature, routing fallback, and .env parser edge cases).
 
 2b. **DeepSeek as the strong/decision tier (the hybrid that makes P0.1 pay off).** — ✅ **IMPLEMENTED 2026-11-15**
    - `models.yaml` strong tier → `deepseek-chat` @ `https://api.deepseek.com`, key from
