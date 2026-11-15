@@ -56,22 +56,23 @@ export function buildSystemPrompt(ctx: PromptContext): string {
   const thoughtProtocol =
     thinkingLevel === 'low'
       ? `## THOUGHT PROTOCOL — LEVEL: LOW (FAST & CONCISE)
-Your "thought" field must be a SINGLE concise tactical sentence (under 20 words). Directly state what you are doing without meta-commentary or deliberation.
-Example: {"thought": "Pinging 127.0.0.1 with 4 packets to verify reachability.", "action": {"tool": "shell", "command": "ping -c 4 127.0.0.1"}}`
+Your "thought" is ONE sentence, but it must name the operator's objective and why THIS step serves it — not a generic habit. If the last observation looks surprising or too clean, say you will verify it rather than trust it.
+Example: {"thought": "Objective is to confirm 10.10.10.5 is up; pinging it directly rather than running a full sweep the task didn't ask for.", "action": {"tool": "shell", "command": "ping -c 4 10.10.10.5"}}`
       : thinkingLevel === 'high'
         ? `## THOUGHT PROTOCOL — LEVEL: HIGH (DEEP & ANALYTICAL)
-Your "thought" field must be an extensive multi-step tactical analysis before executing:
-[OBJECTIVE & SCOPE] Define the exact target, authorized parameters, and operator goal.
-[SURFACE & FOOTPRINT] Analyze previous observations, detected technologies, open ports, honeypot likelihood, and stealth implications.
-[HYPOTHESES & RISKS] Evaluate potential failure modes, rate limits, unintended side-effects, and tool alternatives.
-[TACTICAL DECISION] Clearly explain why the chosen tool is the optimal, minimal, and safest next step (or why it is time to conclude via final).
-Example: {"thought": "[OBJECTIVE & SCOPE] Assess whether web server on 10.10.10.5 exposes sensitive endpoints within charter bounds. [SURFACE & FOOTPRINT] Port 80 is open; TTL 64 suggests Linux/Apache. Honeypot heuristic is clean. [HYPOTHESES & RISKS] Running full dirsearch now is noisy. A targeted curl header probe is safer to detect redirects and server version first. [TACTICAL DECISION] Issue targeted curl -sI to inspect HTTP headers and TLS certificate with minimal network footprint before deeper scanning.", "action": {"tool": "shell", "command": "curl -sI http://10.10.10.5 | head -20"}}`
+Your "thought" is an explicit multi-step analysis written out BEFORE the action. Reason first, then act:
+[OBJECTIVE] The exact host the operator named and what they actually want answered. Everything you do must serve THIS, not a generic playbook.
+[EVIDENCE] What the observations so far actually prove (and what they do NOT). Flag anything surprising, too-clean, or single-sourced as unconfirmed.
+[OPTIONS] 2-3 candidate next steps and why one beats a rote default; what could make each a false positive (soft-404, filtered≠open, wildcard DNS, honeypot banners).
+[DECISION] The single minimal, safest step that advances the objective — or "final" if the evidence already answers it (and is corroborated for anything critical).
+Example: {"thought": "[OBJECTIVE] Operator wants to know if 10.10.10.5's web app exposes admin endpoints — not a full host assessment. [EVIDENCE] Port 80 open, TTL 64 ⇒ likely Linux; nothing yet about the app itself; honeypot heuristic clean but unverified. [OPTIONS] A full dirsearch is noisy and premature; a header probe is minimal and tells me server/stack and redirects first; blindly trusting the open port is a false-positive risk. [DECISION] Start with a targeted curl header probe before any brute-force.", "action": {"tool": "shell", "command": "curl -sI http://10.10.10.5 | head -20"}}`
         : `## THOUGHT PROTOCOL — LEVEL: MEDIUM (DELIBERATE & BALANCED)
-Your "thought" field must follow a structured 3-part check to deliberate before deciding on an action:
-[GOAL] What specific question or task did the operator request?
-[EVIDENCE] What do we know or what did the last observation prove? Do we already have enough information to answer?
-[DECISION] If we have the answer, choose "final". If not, what is the single minimal next command?
-Example: {"thought": "[GOAL] Check if google.com is reachable | [EVIDENCE] ping returned 4 packets received with 0% loss | [DECISION] Target is confirmed reachable — stopping here and returning final report.", "action": {"tool": "final", "text": "Google is reachable."}}`
+Your "thought" follows a 4-part check, written out before you act:
+[GOAL] The specific host + question the operator asked — not a generic sweep.
+[EVIDENCE] What the last observation actually proved, and whether it's trustworthy or needs confirming (watch for false positives / too-clean results).
+[OPTIONS] Why this next step beats a rote default, tied to the goal.
+[DECISION] "final" if the (corroborated) evidence answers the goal; otherwise the single minimal next command.
+Example: {"thought": "[GOAL] Is google.com reachable — nothing more. [EVIDENCE] ping got 4/4 replies, 0% loss — a direct, trustworthy answer. [OPTIONS] No need to scan ports or enumerate; that would exceed the question. [DECISION] final.", "action": {"tool": "final", "text": "Google is reachable (4/4 ICMP replies, 0% loss)."}}`
 
   const modeRules =
     mode === 'guarded'
@@ -225,6 +226,20 @@ Work the whole surface: network & services, web apps and APIs, directories and
 params, DNS & subdomains, TLS config, SMB/file shares, AD/Kerberos (if Windows
 infra), SNMP, known CVEs (nuclei/searchsploit), credential hygiene. Move across
 domains as findings point you there — do not camp on one attack type.
+
+## REASONING DISCIPLINE — read before every action (this is where "smart" happens)
+- TIE EVERY STEP TO THE OBJECTIVE. Act on the specific host the operator named and the
+  specific thing they asked. Do NOT fall back to a generic rote playbook (blanket web
+  crawl / host-discovery / "scan everything") unless the task actually calls for it. If
+  you cannot say in one line why this command advances THIS objective, it's the wrong command.
+- DISTRUST SINGLE, SURPRISING, OR TOO-CLEAN RESULTS. A tool's output is a claim, not a
+  fact. Before you treat a finding as true — especially anything you'll report or exploit —
+  corroborate it. Common false positives to rule out: soft-404 / wildcard pages (every path
+  returns 200), "filtered" read as "open", wildcard DNS, cached/stale data, and honeypot
+  banners (see HONEYPOT AWARENESS). When a result decides the next move, confirm it with a
+  second, independent probe before committing.
+- SMALLEST STEP THAT ANSWERS THE QUESTION. Prefer the minimal probe; escalate only when the
+  evidence points there.
 
 ## TASK FOCUS & COMPLETION
 - Focus strictly on answering the operator's CURRENT prompt. Never repeat or re-answer topics from previous turns.

@@ -7,7 +7,7 @@ export const REDLINE_ACTION_JSON_SCHEMA = {
   properties: {
     thought: {
       type: 'string',
-      description: 'One short line of reasoning explaining the tactical intent'
+      description: 'Multi-step tactical reasoning: the objective, what the evidence so far proves, and why this specific next action (not a generic default)'
     },
     action: {
       type: 'object',

@@ -41,7 +41,11 @@ export interface PlatformSettings {
 
 export const DEFAULT_SETTINGS: PlatformSettings = {
   mode: 'free',
-  thinkingLevel: 'medium',
+  // 'high' makes the agent reason through objective → evidence → options → decision
+  // before each action (P0.2). Cheap when the strong/decision tier is a capable
+  // model (e.g. DeepSeek via RKMG); lower to 'medium' if running decisions on a
+  // slow local model and latency matters.
+  thinkingLevel: 'high',
   provider: 'zai',
   model: '',
   baseUrl: '',

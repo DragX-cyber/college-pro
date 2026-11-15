@@ -1,5 +1,30 @@
 # RedLine Knowledge & Model Gateway (RKMG) Configuration
 # Defines server port, embedding backend, and model tiers for routing.
+#
+# ── TIER ROUTING (P0.1) ──────────────────────────────────────────────────────
+# Two logical tiers:
+#   fast   = cheap/mechanical work (execution of an already-decided step) — LOCAL 9B
+#   strong = the THINKING brain (choosing the next action, planning, synthesis)
+# RedLine marks every agent *reasoning* turn with `X-RedLine-Tier: strong`, and
+# `default_tier` below is the fallback when no header is present.
+#
+# ── HYBRID (active): strong = DeepSeek API, fast = local qwen3.5-9b ───────────
+# Decisions go to a genuinely strong brain (DeepSeek); tool execution stays on
+# the local model. Put your key in rkmg/.env:   DEEPSEEK_API_KEY=sk-...
+# (copy rkmg/.env.example). The gateway loads .env on start and warns if missing.
+# SAFE DEFAULT: if DEEPSEEK_API_KEY is NOT set, the gateway transparently falls
+# back to the local fast tier for every request — so it runs out of the box with
+# no key, and automatically starts using DeepSeek the moment a key is present.
+# To go permanently local, set strong.* back to the 9B (see the LOCAL-ONLY block
+# under the strong tier).
+#
+# ── STRUCTURED OUTPUT (P0.2 — reasoning freedom) ─────────────────────────────
+# structured_output per tier:
+#   schema — strict llama-server grammar (byte-exact actions; LOCAL only)
+#   json   — JSON-object mode only (valid JSON, model structures its own
+#            reasoning in `thought` instead of fighting a 9-branch grammar)
+#   off    — no constraint (max reasoning freedom; RedLine's parser repairs shape)
+# The decision/strong tier uses 'json' so the model can actually reason.
 
 server:
   host: "127.0.0.1"
@@ -17,13 +42,13 @@ tiers:
   fast:
     name: "qwen3.5-9b"
     endpoint: "http://127.0.0.1:8080"
-    description: "Fast light model for routine commands and checks"
+    description: "Local model — mechanical execution of already-decided steps"
     max_tokens: 768
-    temperature: 0.2
+    temperature: 0.2          # deterministic for command emission
     cache_prompt: true
     top_p: 0.9
     repeat_penalty: 1.1
-    # Action types routed to this tier
+    structured_output: "schema"   # strict grammar — guarantees valid local actions
     actions:
       - "shell"
       - "run_check"
@@ -31,15 +56,25 @@ tiers:
       - "get_knowledge"
 
   strong:
-    name: "qwen3-30b-a3b"
-    endpoint: "http://127.0.0.1:8080"
-    description: "Stronger model for multi-step reasoning, strategy, and final synthesis"
-    max_tokens: 768
-    temperature: 0.2
+    # ── HYBRID (active): DeepSeek API as the thinking brain ──
+    name: "deepseek-chat"                 # change to your model id if different
+    endpoint: "https://api.deepseek.com"  # backend appends /v1/chat/completions
+    api_key_env: "DEEPSEEK_API_KEY"       # Bearer token read from rkmg/.env or shell
+    description: "DeepSeek — action choice, planning, strategy, synthesis"
+    max_tokens: 1024          # room for multi-step reasoning in `thought`
+    temperature: 0.3          # a little exploration for planning; still stable
     cache_prompt: true
-    top_p: 0.9
+    top_p: 0.95
     repeat_penalty: 1.1
-    # Action types routed to this tier
+    structured_output: "json"     # DeepSeek JSON mode; frees reasoning (P0.2)
+    # ── LOCAL-ONLY alternative (comment the DeepSeek lines above, uncomment these):
+    # name: "qwen3.5-9b"
+    # endpoint: "http://127.0.0.1:8080"   # same 9B, or a bigger local model on :8082
+    # structured_output: "json"
+    # (remove api_key_env when local)
+    #
+    # NOTE: deepseek-reasoner (R1) reasons even harder but does NOT support JSON
+    # mode — if you use it, set structured_output: "off".
     actions:
       - "get_tool_strategy"
       - "flag_honeypot"
@@ -48,9 +83,10 @@ tiers:
       - "final"
 
 routing:
-  default_tier: "fast"
+  # The reasoning/decision step defaults to the strong brain. RedLine also sends
+  # an explicit X-RedLine-Tier header per turn, which takes precedence.
+  default_tier: "strong"
   planning_tier: "strong"
-  # Heuristic fallback keywords that trigger the strong tier when action is not explicitly known
   planning_keywords:
     - "strategy"
     - "exploit"
@@ -59,4 +95,3 @@ routing:
     - "analyze"
     - "finding"
     - "honeypot"
-

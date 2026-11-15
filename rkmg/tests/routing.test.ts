@@ -50,3 +50,25 @@ test('Routing Decisions: action type and headers -> expected backend', () => {
   assert.strictEqual(historyRoute.selectedTier, 'strong', 'Recent strategy tool call should trigger strong tier');
 });
 
+test('Routing fallback: a remote strong tier with no API key falls back to a local backend', () => {
+  const configPath = path.resolve(__dirname, '../config/models.yaml');
+  loadConfig(configPath);
+  const saved = process.env.DEEPSEEK_API_KEY;
+  try {
+    // No key configured → strong stays the LOGICAL tier, but the executing
+    // backend must swap to a local (non-keyed) tier so the gateway still works.
+    delete process.env.DEEPSEEK_API_KEY;
+    const noKey = routeRequest([], { 'x-redline-tier': 'strong' });
+    assert.strictEqual(noKey.selectedTier, 'strong', 'logical tier choice is preserved');
+    assert.ok(!noKey.backend.getConfig().api_key_env, 'with no key, the backend must be a local (keyless) tier');
+
+    // Key present → the strong tier's own (remote) backend is used.
+    process.env.DEEPSEEK_API_KEY = 'sk-test-placeholder';
+    const withKey = routeRequest([], { 'x-redline-tier': 'strong' });
+    assert.strictEqual(withKey.backend.getConfig().api_key_env, 'DEEPSEEK_API_KEY', 'with a key, the remote strong backend is used');
+  } finally {
+    if (saved === undefined) delete process.env.DEEPSEEK_API_KEY;
+    else process.env.DEEPSEEK_API_KEY = saved;
+  }
+});
+
